@@ -11,9 +11,7 @@ args = parser.parse_args()
 
 
 scanner = initialize_scanner(args.path)
-print('*** RAW TOKENS ***')
-for token in scanner.get_token():
-    print(token)
+
 
 tree = parser_func(scanner)
 print('*** PRINTING TREE. TOKENS SPLIT BY | ***')

@@ -11,32 +11,27 @@ class ParserError(Exception):
 
 RELATIONAL_OPERATORS = set(['>', '>>', '<', '<<', '==', '=', '<>'])
 
-tokens = list()
-token_index = 0
 
+scan = None
+tk = None
 
 def variables():
-    global tokens, token_index
+    global scan, tk
     node = TreeNode('variables')
-    tk = tokens[token_index]
     # Discard keyword
     if tk.group == 'keyword' and tk.payload == 'data':
-        token_index += 1
-        tk = tokens[token_index]
+        tk = next(scan)
         if tk.group == 'id':
             node.tokens.append(tk)
-            token_index += 1
-            tk = tokens[token_index]
+            tk = next(scan)
             if tk.payload == '=':
                 node.tokens.append(tk)
-                token_index += 1
-                tk = tokens[token_index]
+                tk = next(scan)
                 if tk.group == 'digit':
                     node.tokens.append(tk)
-                    token_index += 1
-                    tk = tokens[token_index]
+                    tk = next(scan)
                     if tk.payload == '.':
-                        token_index += 1
+                        tk = next(scan)
                         node.child0 = variables()
                         return node
                     else:
@@ -51,41 +46,37 @@ def variables():
 
 
 def r():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('r')
-    tk = tokens[token_index]
     if tk.payload == '(':
         node.tokens.append(tk)
-        token_index += 1
-        tk = tokens[token_index]
+        tk = next(scan)
         if tk.group == 'id':
             node.tokens.append(tk)
-            token_index += 1
-            tk = tokens[token_index]
+            tk = next(scan)
             if tk.payload == ')':
                 node.tokens.append(tk)
-                token_index += 1
+                tk = next(scan)
             else:
                 raise ParserError(tk.line_number, tk.identifier, ')', tk.payload)
         else:
             raise ParserError(tk.line_number, tk.identifier, 'id', tk.group)
     elif tk.group == 'id':
         node.tokens.append(tk)
-        token_index += 1
+        tk = next(scan)
         return node
     elif tk.group == 'digit':
         node.tokens.append(tk)
-        token_index += 1
+        tk = next(scan)
         return node
 
 
 def m():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('m')
-    tk = tokens[token_index]
     if tk.payload == '*':
         node.tokens.append(tk)
-        token_index += 1
+        tk = next(scan)
         node.child0 = m()
     else:
         node.child0 = r()
@@ -93,49 +84,44 @@ def m():
 
 
 def a():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('a')
     node.child0 = m()
-    tk = tokens[token_index]
     if tk.payload == '+':
         node.tokens.append(tk)
-        token_index += 1
+        tk = next(scan)
         node.child1 = a()
     return node
 
 
 def n():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('n')
     node.child0 = a()
-    tk = tokens[token_index]
     if tk.payload in set(['/', '*']):
         node.tokens.append(tk)
-        token_index += 1
+        tk = next(scan)
         node.child1 = n()
     return node
 
 
 def expr():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('expr')
     node.child0 = n()
-    tk = tokens[token_index]
     if tk.payload == '-':
         node.tokens.append(tk)
-        token_index += 1
+        tk = next(scan)
         node.child1 = expr()
     return node
 
 
 
 def intk():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('intk')
-    tk = tokens[token_index]
     if tk.payload == 'in':
-        token_index += 1
-        tk = tokens[token_index]
+        tk = next(scan)
         if tk.group == 'id':
             node.tokens.append(tk)
             return node
@@ -146,11 +132,10 @@ def intk():
 
 
 def out():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('out')
-    tk = tokens[token_index]
     if tk.payload == 'out':
-        token_index += 1
+        tk = next(scan)
         node.child0 = expr()
         return node
     else:
@@ -158,16 +143,14 @@ def out():
 
 
 def assign():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('assign')
-    tk = tokens[token_index]
     if tk.group == 'id':
         node.tokens.append(tk)
-        token_index += 1
-        tk = tokens[token_index]
+        tk = next(scan)
         if tk.payload == '=':
             node.tokens.append(tk)
-            token_index += 1
+            tk = next(scan)
             node.child0 = expr()
             return node
         else:
@@ -177,34 +160,29 @@ def assign():
 
 
 def ro():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('ro')
-    tk = tokens[token_index]
     if tk.payload in RELATIONAL_OPERATORS:
         node.tokens.append(tk)
-        token_index += 1
+        tk = next(scan)
         return node
     return None
 
 
 def iffy():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('iffy')
-    tk = tokens[token_index]
     if tk.payload == 'iffy':
-        token_index += 1
-        tk = tokens[token_index]
+        tk = next(scan)
         if tk.payload == '[':
-            token_index += 1
+            tk = next(scan)
             node.child0 = expr()
             node.child1 = ro()
             node.child2 = expr()
-            tk = tokens[token_index]
             if tk.payload == ']':
-                token_index += 1
-                tk = tokens[token_index]
+                tk = next(scan)
                 if tk.payload == 'then':
-                    token_index += 1
+                    tk = next(scan)
                     node.child3 = stat()
                     return node
                 else:
@@ -219,20 +197,17 @@ def iffy():
     
 
 def loop():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('loop')
-    tk = tokens[token_index]
     if tk.payload == 'loop':
-        token_index += 1
-        tk = tokens[token_index]
+        tk = next(scan)
         if tk.payload == '[':
-            token_index += 1
+            tk = next(scan)
             node.child0 = expr()
             node.child1 = ro()
             node.child2 = expr()
-            tk = tokens[token_index]
             if tk.payload == ']':
-                token_index += 1
+                tk = next(scan)
                 node.child3 = stat()
                 return node
             else:
@@ -246,23 +221,20 @@ def loop():
 
 
 def stat():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('stat')
-    tk = tokens[token_index]
     if tk.payload == 'in':
         node.child0 = intk()
-        token_index += 1
-        tk = tokens[token_index]
+        tk = next(scan)
         if tk.payload == '.':
-            token_index += 1
+            tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
     elif tk.payload == 'out':
         node.child0 = out()
-        tk = tokens[token_index]
         if tk.payload == '.':
-            token_index += 1
+            tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
@@ -271,25 +243,22 @@ def stat():
         return node
     elif tk.payload == 'iffy':
         node.child0 = iffy()
-        tk = tokens[token_index]
         if tk.payload == '.':
-            token_index += 1
+            tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
     elif tk.payload == 'loop':
         node.child0 = loop()
-        tk = tokens[token_index]
         if tk.payload == '.':
-            token_index += 1
+            tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
     elif tk.group == 'id':
         node.child0 = assign()
-        tk = tokens[token_index]
         if tk.payload == '.':
-            token_index += 1
+            tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
@@ -297,10 +266,8 @@ def stat():
         raise ParserError(tk.line_number, tk.identifier, 'body', 'none')
 
 def mstat():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('mstat')
-    # Just peek at the token
-    tk = tokens[token_index]
     if tk.payload in set(['in', 'out', 'iffy', 'loop', 'begin']) or tk.group == 'id':
         node.child0 = stat()
         node.child1 = mstat()
@@ -310,23 +277,21 @@ def mstat():
 
 
 def stats():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('stats')
     node.child0 = stat()
     node.child1 = mstat()
     return node
 
 def block():
-    global tokens, token_index
+    global tk, scan
     node = TreeNode('block')
-    tk = tokens[token_index]
     if tk.group == 'keyword' and tk.payload == 'begin':
-        token_index += 1
+        tk = next(scan)
         node.child0 = variables()
         node.child1 = stats()
-        tk = tokens[token_index]
         if tk.payload == 'end':
-            token_index += 1
+            tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, 'end', tk.payload)
@@ -336,8 +301,7 @@ def block():
 
 
 def program():
-    global tokens
-    global token_index
+    global tk, scan
     tree = TreeNode('program')
     tree.child0 = variables()
     tree.child1 = block()
@@ -345,8 +309,11 @@ def program():
 
 
 def parser_func(_scanner):
-    global tokens
-    for tk in _scanner.get_token():
-        tokens.append(tk)
-    tokens.append(Token('EOFTK', 'EOFTK', -1, -1))
-    return program()
+    global scan, tk
+    scan = _scanner
+    tk = next(scan)
+    tree = program()
+    if tk.payload == 'eof':
+        return tree
+    else:
+        raise ParserError(tk.line_number, tk.identifier, 'eof', tk.payload)
