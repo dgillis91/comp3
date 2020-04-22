@@ -53,3 +53,5 @@ class FileReader:
     def _initialize_data(self):
         with open(self._filename, 'r') as input_file:
             self._data = list(input_file.read())
+            self._data.append('\n')
+            self._data.append('')
