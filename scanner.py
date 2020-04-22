@@ -7,7 +7,7 @@ from token import Token
 
 
 class Scanner:
-    def __init__(self, reader: FileReader):
+    def __init__(self, reader):
         self._reader = reader
         self._handlers = dict()
         self._start_state = None
