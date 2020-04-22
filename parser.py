@@ -344,7 +344,7 @@ def program():
     return tree
 
 
-def parser_func(_scanner: Scanner):
+def parser_func(_scanner):
     global tokens
     for tk in _scanner.get_token():
         tokens.append(tk)
