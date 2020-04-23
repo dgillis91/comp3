@@ -32,7 +32,7 @@ def variables():
                     tk = next(scan)
                     if tk.payload == '.':
                         tk = next(scan)
-                        node.child0 = variables()
+                        node.children.append(variables())
                         return node
                     else:
                         raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
@@ -77,42 +77,42 @@ def m():
     if tk.payload == '*':
         node.tokens.append(tk)
         tk = next(scan)
-        node.child0 = m()
+        node.children.append(m())
     else:
-        node.child0 = r()
+        node.children.append(r())
     return node
 
 
 def a():
     global tk, scan
     node = TreeNode('a')
-    node.child0 = m()
+    node.children.append(m())
     if tk.payload == '+':
         node.tokens.append(tk)
         tk = next(scan)
-        node.child1 = a()
+        node.children.append(a())
     return node
 
 
 def n():
     global tk, scan
     node = TreeNode('n')
-    node.child0 = a()
+    node.children.append(a())
     if tk.payload in set(['/', '*']):
         node.tokens.append(tk)
         tk = next(scan)
-        node.child1 = n()
+        node.children.append(n())
     return node
 
 
 def expr():
     global tk, scan
     node = TreeNode('expr')
-    node.child0 = n()
+    node.children.append(n())
     if tk.payload == '-':
         node.tokens.append(tk)
         tk = next(scan)
-        node.child1 = expr()
+        node.children.append(expr())
     return node
 
 
@@ -136,7 +136,7 @@ def out():
     node = TreeNode('out')
     if tk.payload == 'out':
         tk = next(scan)
-        node.child0 = expr()
+        node.children.append(expr())
         return node
     else:
         raise ParserError(tk.line_number, tk.identifier, 'out', tk.payload)
@@ -151,7 +151,7 @@ def assign():
         if tk.payload == '=':
             node.tokens.append(tk)
             tk = next(scan)
-            node.child0 = expr()
+            node.children.append(expr())
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '=', tk.payload)
@@ -176,14 +176,14 @@ def iffy():
         tk = next(scan)
         if tk.payload == '[':
             tk = next(scan)
-            node.child0 = expr()
-            node.child1 = ro()
-            node.child2 = expr()
+            node.children.append(expr())
+            node.children.append(ro())
+            node.children.append(expr())
             if tk.payload == ']':
                 tk = next(scan)
                 if tk.payload == 'then':
                     tk = next(scan)
-                    node.child3 = stat()
+                    node.children.append(stat())
                     return node
                 else:
                     raise ParserError(tk.line_number, tk.identifier, 'then', tk.payload)
@@ -203,12 +203,12 @@ def loop():
         tk = next(scan)
         if tk.payload == '[':
             tk = next(scan)
-            node.child0 = expr()
-            node.child1 = ro()
-            node.child2 = expr()
+            node.children.append(expr())
+            node.children.append(ro())
+            node.children.append(expr())
             if tk.payload == ']':
                 tk = next(scan)
-                node.child3 = stat()
+                node.children.append(stat())
                 return node
             else:
                 raise ParserError(tk.line_number, tk.identifier, ']', tk.payload)
@@ -224,7 +224,7 @@ def stat():
     global tk, scan
     node = TreeNode('stat')
     if tk.payload == 'in':
-        node.child0 = intk()
+        node.children.append(intk())
         tk = next(scan)
         if tk.payload == '.':
             tk = next(scan)
@@ -232,31 +232,31 @@ def stat():
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
     elif tk.payload == 'out':
-        node.child0 = out()
+        node.children.append(out())
         if tk.payload == '.':
             tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
     elif tk.payload == 'begin':
-        node.child0 = block()
+        node.children.append(block())
         return node
     elif tk.payload == 'iffy':
-        node.child0 = iffy()
+        node.children.append(iffy())
         if tk.payload == '.':
             tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
     elif tk.payload == 'loop':
-        node.child0 = loop()
+        node.children.append(loop())
         if tk.payload == '.':
             tk = next(scan)
             return node
         else:
             raise ParserError(tk.line_number, tk.identifier, '.', tk.payload)
     elif tk.group == 'id':
-        node.child0 = assign()
+        node.children.append(assign())
         if tk.payload == '.':
             tk = next(scan)
             return node
@@ -269,8 +269,8 @@ def mstat():
     global tk, scan
     node = TreeNode('mstat')
     if tk.payload in set(['in', 'out', 'iffy', 'loop', 'begin']) or tk.group == 'id':
-        node.child0 = stat()
-        node.child1 = mstat()
+        node.children.append(stat())
+        node.children.append(mstat())
         return node
     else:
         return None
@@ -279,8 +279,8 @@ def mstat():
 def stats():
     global tk, scan
     node = TreeNode('stats')
-    node.child0 = stat()
-    node.child1 = mstat()
+    node.children.append(stat())
+    node.children.append(mstat())
     return node
 
 def block():
@@ -288,8 +288,8 @@ def block():
     node = TreeNode('block')
     if tk.group == 'keyword' and tk.payload == 'begin':
         tk = next(scan)
-        node.child0 = variables()
-        node.child1 = stats()
+        node.children.append(variables())
+        node.children.append(stats())
         if tk.payload == 'end':
             tk = next(scan)
             return node
@@ -303,8 +303,8 @@ def block():
 def program():
     global tk, scan
     tree = TreeNode('program')
-    tree.child0 = variables()
-    tree.child1 = block()
+    tree.children.append(variables())
+    tree.children.append(block())
     return tree
 
 
