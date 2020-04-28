@@ -51,3 +51,19 @@ class Scanner:
                 return Token(new_state, ''.join(buffer).strip(), self._identifier_iterator, char.line_number)
             else:
                 handler = self._handlers[new_state]
+
+    # Support for python 3
+    def next(self):
+        handler = self._reset_fsm()
+        buffer = list()
+        while True:
+            char = next(self._generator)
+            if char.character == '':
+                return Token('keyword', 'eof', self._identifier_iterator, char.line_number)
+            buffer.append(char.character)
+            new_state = handler(char.character)
+            if new_state in self._end_states:
+                self._identifier_iterator += 1
+                return Token(new_state, ''.join(buffer).strip(), self._identifier_iterator, char.line_number)
+            else:
+                handler = self._handlers[new_state]

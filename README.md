@@ -1,4 +1,4 @@
-# Compilers Project Two
+# Compilers Project Three
 
 ./parser [path]
 
