@@ -47,3 +47,9 @@ class Token:
 
     def __str__(self):
         return 'id: {}; type: {}; line_number: {}; token: {};'.format(self.identifier, self.group, self.line_number, self.payload)
+
+    def __hash__(self):
+        return hash(self.group + self.payload)
+    
+    def __eq__(self, other):
+        return self.payload == other.payload and self.group == other.group
